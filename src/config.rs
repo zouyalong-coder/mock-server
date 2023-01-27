@@ -44,12 +44,7 @@ fn default_status() -> u16 {
 
 impl API {
     pub fn match_path(&self, path: &str) -> bool {
-        let matched = self.path_pattern.as_ref().unwrap().is_match(path);
-        println!(
-            "path::::: {}, pattern: {:?} matched: {}",
-            path, self.path_pattern, matched
-        );
-        matched
+        self.path_pattern.as_ref().unwrap().is_match(path)
     }
 
     fn amend(&mut self) -> Result<()> {
@@ -60,7 +55,6 @@ impl API {
 
 impl Into<HttpResponse> for &API {
     fn into(self) -> HttpResponse {
-        println!("httpResponse: {:?}", self.status);
         let mut builder = HttpResponse::build(StatusCode::from_u16(self.status).unwrap());
         for (k, v) in self.headers.iter() {
             builder.append_header((k.as_str(), v.as_str()));
@@ -73,7 +67,6 @@ impl Into<HttpResponse> for &API {
                     builder.content_type(
                         HeaderValue::from_str("application/x-www-form-urlencoded").unwrap(),
                     );
-                    println!("body: {}", &body);
                     builder.body(body)
                 }
                 _ => builder.json(body),
@@ -99,13 +92,11 @@ impl Config {
             api.amend()?;
         }
         conf.validate()?;
-        println!("conf: {:?}", conf);
         Ok(conf)
     }
 
     pub fn load_from_file(path: &str) -> Result<Self> {
         let yaml = std::fs::read_to_string(path)?;
-        println!("yaml: {}", yaml);
         Self::from_yaml(&yaml)
     }
 
@@ -126,13 +117,9 @@ impl Config {
     }
 
     pub fn find_api(&self, path: &str, method: &Method) -> Option<&API> {
-        println!("find_api: {} {}", path, method);
-        println!("apis: {:?}", self.apis);
-        self.apis.iter().find(|api| {
-            let hit = api.method == *method && api.match_path(path);
-            println!("hit: {:?} {}", api, hit);
-            hit
-        })
+        self.apis
+            .iter()
+            .find(|api| api.method == *method && api.match_path(path))
     }
 }
 

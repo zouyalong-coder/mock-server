@@ -1,6 +1,7 @@
 use clap::Parser;
 
 #[derive(Parser, Clone, Debug)]
+#[clap(version, author, about)]
 pub struct Cli {
     /// workspace. default is current directory.
     #[clap(short = 'W', long, default_value = ".")]
@@ -11,4 +12,7 @@ pub struct Cli {
     /// port.
     #[clap(short = 'P', long, default_value = "8080")]
     pub port: u16,
+    /// verbose mode. Show all information from requests.
+    #[clap(short, long, action=clap::ArgAction::SetTrue, default_value="false")]
+    pub verbose: bool,
 }

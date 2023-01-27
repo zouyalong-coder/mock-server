@@ -1,16 +1,18 @@
-use std::{future::Future, pin::Pin};
+use std::{env, future::Future, pin::Pin};
 
 use actix_files::Files;
 use actix_web::{
     http::header::HeaderMap,
-    web::{self, Data},
+    web::{self, Bytes, Data},
     App, HttpRequest, HttpResponse, HttpResponseBuilder, HttpServer, Responder,
 };
 use anyhow::Result;
 use clap::Parser;
 use cli::Cli;
-use log::info;
-use reqwest::{Method, StatusCode};
+use colored::Colorize;
+use log::{info, warn};
+
+use crate::tty::highlight_text;
 
 // #[feature(async_closure)]
 // #[macro_use]
@@ -21,27 +23,30 @@ extern crate pretty_env_logger;
 mod cli;
 mod config;
 mod handlers;
+mod tty;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    if env::var("RUST_LOG").is_err() {
+        env::set_var("RUST_LOG", "info")
+    }
     pretty_env_logger::init();
     let args = Cli::parse();
     let wd = args.work_dir.clone();
     let config_file = format!("{}/config.yaml", wd);
-    info!("load config file: {}", config_file);
     let conf = match config::Config::load_from_file(&config_file) {
         Ok(conf) => conf,
         Err(e) => {
-            info!("load config file failed: {}", e);
+            warn!("load config file failed: {}", e);
             config::Config::empty()
         }
     };
-    info!("conf: {:?}", conf);
-    info!("work_dir: {}", wd);
-    info!("run server on port: {}", args.port);
     HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(Global { conf: conf.clone() }))
+            .app_data(Data::new(Global {
+                conf: conf.clone(),
+                verbose: args.verbose,
+            }))
             .service(Files::new("/static", wd.as_str()).show_files_listing())
             .route("/mock{subpath:/.+}", actix_web::web::get().to(mock))
             .route("/mock{subpath:/.+}", actix_web::web::post().to(mock))
@@ -58,14 +63,48 @@ async fn main() -> Result<()> {
 
 struct Global {
     pub conf: config::Config,
+    pub verbose: bool,
 }
 
-async fn mock(request: HttpRequest, data: web::Data<Global>) -> HttpResponse {
+async fn mock(raw_body: Bytes, request: HttpRequest, data: web::Data<Global>) -> HttpResponse {
     let path = request.match_info().get("subpath").unwrap_or("/");
-    println!("path: {}", path);
+    if data.verbose {
+        print_request(&request, raw_body.clone());
+    }
     let hit_api = data.conf.find_api(path, &request.method());
     match hit_api {
         Some(api) => api.into(),
         None => HttpResponse::NotFound().body("not found"),
+    }
+}
+
+fn content_type(req: &HttpRequest) -> Option<&str> {
+    req.headers()
+        .get("content-type")
+        .map(|ct| ct.to_str().unwrap())
+}
+
+fn print_request(req: &HttpRequest, raw_body: Bytes) {
+    let method = req.method();
+    let path = req.path();
+    let query = req.query_string();
+    info!("{} {}?{}", method.to_string().yellow(), path, query);
+    req.headers().iter().for_each(|(key, value)| {
+        info!(
+            "{}: {}",
+            key.to_string().green(),
+            value.to_str().unwrap().white()
+        );
+    });
+    match content_type(req) {
+        Some("application/json") => {
+            let body = String::from_utf8(raw_body.to_vec()).unwrap();
+            highlight_text(body.as_str(), "json", None).unwrap();
+        }
+        Some("application/x-www-form-urlencoded") => {
+            let body = String::from_utf8(raw_body.to_vec()).unwrap();
+            info!("{}", body.white())
+        }
+        _ => {}
     }
 }

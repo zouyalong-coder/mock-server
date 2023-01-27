@@ -7,5 +7,5 @@ apis:
       error: 1
   - path: /api/tt
     status: 200
-    content_type: raw
-    body: 123
+    body: 
+      error: 2
