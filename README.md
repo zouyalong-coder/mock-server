@@ -1,4 +1,4 @@
-# mock-http-server
+# mock-server
 一个简单的 mock 服务器。方便用 yaml 方式对接口行为进行简单配置，达到 mock 的目的。
 
 ## features

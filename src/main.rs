@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-struct Global {
+pub struct Global {
     pub conf: config::Config,
     pub verbose: bool,
 }
