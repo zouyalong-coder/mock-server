@@ -1,0 +1,11 @@
+apis:
+  - path: /api/test/\d+$
+    method: GET
+    status: 400
+    content_type: form
+    body:
+      error: 1
+  - path: /api/tt
+    status: 200
+    content_type: raw
+    body: 123
