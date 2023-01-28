@@ -4,3 +4,9 @@
 ## features
 - 支持使用 YAML 配置的方式对 http 接口进行 mock。
 - 支持简单的本地文件服务。
+
+## 使用方法
+```bash
+# 安装
+cargo install --git https://github.com/zouyalong-coder/mock-server.git
+```
