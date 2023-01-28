@@ -9,4 +9,10 @@
 ```bash
 # 安装
 cargo install --git https://github.com/zouyalong-coder/mock-server
+
+# help
+mock_server --help
+
+# 启动
+cd <work dir> && mock_server 
 ```
