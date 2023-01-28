@@ -34,6 +34,7 @@ async fn main() -> Result<()> {
     let args = Cli::parse();
     let wd = args.work_dir.clone();
     let config_file = format!("{}/config.yaml", wd);
+    let upload_file = args.up_file;
     let conf = match config::Config::load_from_file(&config_file) {
         Ok(conf) => conf,
         Err(e) => {
@@ -42,17 +43,26 @@ async fn main() -> Result<()> {
         }
     };
     HttpServer::new(move || {
-        App::new()
+        let app = App::new()
             .app_data(Data::new(Global {
                 conf: conf.clone(),
                 verbose: args.verbose,
+                work_dir: wd.clone(),
             }))
             .service(Files::new("/static", wd.as_str()).show_files_listing())
             .route("/mock{subpath:/.+}", actix_web::web::get().to(mock))
             .route("/mock{subpath:/.+}", actix_web::web::post().to(mock))
             .route("/mock{subpath:/.+}", actix_web::web::delete().to(mock))
             .route("/mock{subpath:/.+}", actix_web::web::put().to(mock))
-            .route("/list_api", actix_web::web::get().to(handlers::list_api))
+            .route("/list_api", actix_web::web::get().to(handlers::list_api));
+        if upload_file {
+            app.route(
+                "/upload/{subpath:.+}",
+                actix_web::web::put().to(handlers::upload_file),
+            )
+        } else {
+            app
+        }
     })
     .bind(("0.0.0.0", args.port))?
     .run()
@@ -64,6 +74,7 @@ async fn main() -> Result<()> {
 pub struct Global {
     pub conf: config::Config,
     pub verbose: bool,
+    pub work_dir: String,
 }
 
 async fn mock(raw_body: Bytes, request: HttpRequest, data: web::Data<Global>) -> HttpResponse {
