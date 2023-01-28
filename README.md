@@ -8,5 +8,5 @@
 ## 使用方法
 ```bash
 # 安装
-cargo install --git https://github.com/zouyalong-coder/mock-server.git
+cargo install --git https://github.com/zouyalong-coder/mock-server
 ```
