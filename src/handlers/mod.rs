@@ -1,8 +1,5 @@
-use std::sync::Arc;
-
 use actix_multipart::Multipart;
 use actix_web::{
-    put,
     web::{self, Path},
     HttpResponse, Responder,
 };

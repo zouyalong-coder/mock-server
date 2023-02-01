@@ -1,10 +1,9 @@
-use std::{env, future::Future, pin::Pin};
+use std::env;
 
 use actix_files::Files;
 use actix_web::{
-    http::header::HeaderMap,
     web::{self, Bytes, Data},
-    App, HttpRequest, HttpResponse, HttpResponseBuilder, HttpServer, Responder,
+    App, HttpRequest, HttpResponse, HttpServer,
 };
 use anyhow::Result;
 use clap::Parser;
@@ -22,6 +21,7 @@ extern crate pretty_env_logger;
 
 mod cli;
 mod config;
+mod error;
 mod handlers;
 mod tty;
 
@@ -81,11 +81,14 @@ async fn mock(raw_body: Bytes, request: HttpRequest, data: web::Data<Global>) ->
     let path = request.match_info().get("subpath").unwrap_or("/");
     if data.verbose {
         print_request(&request, raw_body.clone());
+        info!("");
     }
     let hit_api = data.conf.find_api(path, &request.method());
     match hit_api {
         Some(api) => api.into(),
-        None => HttpResponse::NotFound().body("not found"),
+        None => HttpResponse::NotFound()
+            .content_type("text/plain; charset=utf-8")
+            .body(format!("{} not found, pls check it in config.yaml", path)),
     }
 }
 

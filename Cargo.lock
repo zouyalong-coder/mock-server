@@ -1129,6 +1129,7 @@ dependencies = [
  "serde_urlencoded",
  "serde_yaml",
  "syntect",
+ "thiserror",
  "tokio",
 ]
 
