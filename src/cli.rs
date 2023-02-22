@@ -15,4 +15,7 @@ pub struct Cli {
     /// verbose mode. Show all information from requests.
     #[clap(short, long, action=clap::ArgAction::SetTrue, default_value="false")]
     pub verbose: bool,
+    /// Prefix of static files.
+    #[clap(short = 'S', long, default_value = "static")]
+    pub static_prefix: String,
 }

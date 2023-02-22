@@ -33,6 +33,7 @@ async fn main() -> Result<()> {
     pretty_env_logger::init();
     let args = Cli::parse();
     let wd = args.work_dir.clone();
+    let static_prefix = args.static_prefix.clone();
     let config_file = format!("{}/config.yaml", wd);
     let upload_file = args.up_file;
     let conf = match config::Config::load_from_file(&config_file) {
@@ -49,12 +50,15 @@ async fn main() -> Result<()> {
                 verbose: args.verbose,
                 work_dir: wd.clone(),
             }))
-            .service(Files::new("/static", wd.as_str()).show_files_listing())
             .route("/mock{subpath:/.+}", actix_web::web::get().to(mock))
             .route("/mock{subpath:/.+}", actix_web::web::post().to(mock))
             .route("/mock{subpath:/.+}", actix_web::web::delete().to(mock))
             .route("/mock{subpath:/.+}", actix_web::web::put().to(mock))
-            .route("/list_api", actix_web::web::get().to(handlers::list_api));
+            .route("/list_api", actix_web::web::get().to(handlers::list_api))
+            .service(
+                Files::new(format!("/{}", static_prefix.as_str()).as_str(), wd.as_str())
+                    .show_files_listing(),
+            );
         if upload_file {
             app.route(
                 "/upload/{subpath:.+}",
